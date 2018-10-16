@@ -1,0 +1,17 @@
+<package format="2">
+        <name>rover</name>
+        <version>0.0.0<version>
+        <description>
+        Conteins all the packages Rover needs
+        </description>
+        <manteiner enmail="ivan.aochoa.g@hotmail.com">Ivan Ochoa</manteiner>
+        <license>NONE</license>
+        
+        <url>https://github.com/scanf30/rover.git</url>
+        <autor email="ivan.aochoa.g@hotmail.com">Ivan Ochoa</autor>
+        <buildtool_depend>catkin</buildtool_depend>
+        
+        <export>
+                <metapackage/>
+        </export>
+</package>
