@@ -10,32 +10,47 @@ from std_msgs.msg import Int16
 from cv_bridge import CvBridge, CvBridgeError
 import dynamic_reconfigure.client
 
-lr = [0, 0, 0]
-ur = [0, 0, 0]
+lr1 = [0, 0, 0]
+ur1 = [0, 0, 0]
+lr2 = [0, 0, 0]
+ur2 = [0, 0, 0]
 
 
 def callback(config):
 
-	global lr
-	global ur
+	global lr1
+	global ur1
+	global lr2
+	global ur2
 
-	hL = config['h_lower']
-	sL = config['s_lower']
-	vL = config['v_lower']
+	hL1 = config['h_lower1']
+	sL1 = config['s_lower1']
+	vL1 = config['v_lower1']
 
-	hU = config['h_upper']
-	sU = config['s_upper']
-	vU = config['v_upper']
+	hL2 = config['h_lower2']
+	sL2 = config['s_lower2']
+	vL2 = config['v_lower2']
 
-	
+	hU1 = config['h_upper1']
+	sU1 = config['s_upper1']
+	vU1 = config['v_upper1']
 
-	lr = [int(hL), int(sL), int(vL)]
-	ur = [int(hU), int(sU), int(vU)]
+	hU2 = config['h_upper2']
+	sU2 = config['s_upper2']
+	vU2 = config['v_upper2']
+
+	lr1 = [int(hL1), int(sL1), int(vL1)]
+	ur1 = [int(hU1), int(sU1), int(vU1)]
+
+	lr2 = [int(hL2), int(sL2), int(vL2)]
+	ur2 = [int(hU2), int(sU2), int(vU2)]
 
 def publisher():
 
-	global lr
-	global ur
+	global lr1
+	global ur1
+	global lr2
+	global ur2
 
 	rospy.init_node("fruit_tracker_node")
 	rospy.wait_for_service("/fruit_tracker_server/set_parameters")
@@ -47,9 +62,6 @@ def publisher():
 	yPub = rospy.Publisher('yAxis', Int16, queue_size = 1)
 
 	bridge = CvBridge()
-
-	lower_red = np.array(lr)
-	upper_red = np.array(ur)
 
 	cap = cv2.VideoCapture(1)
 	cap.set(3, 660)
@@ -67,16 +79,22 @@ def publisher():
 		blurred = cv2.GaussianBlur(frame, (11,11), 0)
 		hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 
-		lower_red = np.array(lr)
-		upper_red = np.array(ur)
+		lower_red1 = np.array(lr1)
+		upper_red1 = np.array(ur1)
+		lower_red2 = np.array(lr2)
+		upper_red2 = np.array(ur2)
 
-		mask = cv2.inRange(hsv, lower_red, upper_red)
+		mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
+		mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+
+		mask = mask1 | mask2
+
 		mask = cv2.erode(mask, None, iterations = 2)
 		mask = cv2.dilate(mask, None, iterations = 2)
 
 		(_, cnts, _) = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-		#cv2.drawContours(frame, cnts, -1, (0, 255, 0), 3)
+		cv2.drawContours(frame, cnts, -1, (0, 255, 0), 3)
 		cv2.line(frame, (0, 160), (660, 160), (255, 0, 0), 3)
 		cv2.line(frame, (0, 320), (660, 320), (255, 0, 0), 3)
 
@@ -85,7 +103,7 @@ def publisher():
 			c = max(cnts, key = cv2.contourArea)
 			((x, y), radius) = cv2.minEnclosingCircle(c)
 			
-			if (radius > 10):
+			if (radius > 15):
 				#cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
 				#cv2.circle(frame, (int(x), int(y)), 5, (0, 0, 255), -1)
 
