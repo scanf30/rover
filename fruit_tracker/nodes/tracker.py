@@ -6,7 +6,7 @@ import rospy
 import numpy as np
 import cv2
 from sensor_msgs.msg import Image
-from std_msgs.msg import Int16
+from geometry_msgs.msg import Vector3
 from cv_bridge import CvBridge, CvBridgeError
 import dynamic_reconfigure.client
 
@@ -59,7 +59,7 @@ def publisher():
 
 
 	imgPub = rospy.Publisher('fruitImg', Image, queue_size = 1)
-	yPub = rospy.Publisher('yAxis', Int16, queue_size = 1)
+	posPub = rospy.Publisher('posiTomate', Vector3, queue_size = 1)
 
 	bridge = CvBridge()
 
@@ -67,13 +67,15 @@ def publisher():
 	cap.set(3, 660)
 	cap.set(4, 480)
 
-	msg = Int16()
+	msg = Vector3()
 
 	rate = rospy.Rate(60)
 
 	while not rospy.is_shutdown():
 		
-		msg.data = 0		
+		msg.x = 0
+		msg.y = 0
+		msg.z = 0		
 
 		ret, frame = cap.read()
 		blurred = cv2.GaussianBlur(frame, (11,11), 0)
@@ -94,9 +96,11 @@ def publisher():
 
 		(_, cnts, _) = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-		cv2.drawContours(frame, cnts, -1, (0, 255, 0), 3)
+		#cv2.drawContours(frame, cnts, -1, (0, 255, 0), 3)
 		cv2.line(frame, (0, 160), (660, 160), (255, 0, 0), 3)
 		cv2.line(frame, (0, 320), (660, 320), (255, 0, 0), 3)
+		cv2.line(frame, (220, 0), (220, 480), (255, 0, 0), 3)
+		cv2.line(frame, (440, 0), (440, 480), (255, 0, 0), 3)
 
 		if len(cnts) > 0:
 		
@@ -113,18 +117,29 @@ def publisher():
 				cv2.rectangle(frame,(int(x - radius - offset - 2), int(y - radius - 15 - offset)),(int(x + 70), int(y - radius - offset)),(0,255,0),-1)
 
 				#El mouse rojo tiene un diametro de 100 px a 0.56m de distancia.
-				dist = round(56 / (radius * 2), 2)
+				diameter = radius * 2
+				dist = round(56 / (diameter), 2)
 
 				font = cv2.FONT_HERSHEY_PLAIN
 				text = 'Tomate! ' + str(dist) + 'm'
     				cv2.putText(frame, text, (int(x - radius - offset), int(y - radius - offset)), font, 1,(255,255,255),2,cv2.LINE_AA)
-			
-				if (y < 160):
-					msg.data = 1
-				elif (y > 360):
-					msg.data = -1
 
-		yPub.publish(msg)
+				
+
+				if (diameter < 100):
+					msg.x = 1
+			
+				if (x < 220):
+					msg.y = -1
+				elif (y > 440):
+					msg.y = 1
+
+				if (y < 160):
+					msg.z = 1
+				elif (y > 360):
+					msg.z = -1
+
+		posPub.publish(msg)
 
 		
 		try:
